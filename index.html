@@ -34,6 +34,11 @@
         .leaflet-popup-close-button {
             color: #99aabb !important;
         }
+        select option {
+            background: #1a2236;
+            color: #ccddeeff;
+            padding: 8px;
+        }
     </style>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -3473,17 +3478,32 @@ function OrderDashboard() {
       fontWeight: 600,
       textTransform: "uppercase"
     }
-  }, "MARKET:"), /*#__PURE__*/React.createElement(Pill, {
-    active: marketFilter === "all",
-    onClick: () => setMarketFilter("all")
-  }, "All Markets"), allMarkets.filter(m => m !== "Unknown" && m !== "Unmapped").map(m => /*#__PURE__*/React.createElement(Pill, {
+  }, "MARKET:"), /*#__PURE__*/React.createElement("select", {
+    value: marketFilter,
+    onChange: e => setMarketFilter(e.target.value),
+    style: {
+      padding: "7px 14px",
+      borderRadius: 20,
+      border: "1px solid rgba(255,255,255,0.18)",
+      fontSize: 13,
+      background: marketFilter === "all" ? "rgba(255,255,255,0.07)" : "#4B6BFF",
+      color: marketFilter === "all" ? "#ccddeeff" : "#fff",
+      fontFamily: "'Inter', sans-serif",
+      fontWeight: 500,
+      outline: "none",
+      cursor: "pointer",
+      appearance: "none",
+      WebkitAppearance: "none",
+      backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2399aabb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 12px center",
+      paddingRight: 32,
+      minWidth: 180
+    }
+  }, /*#__PURE__*/React.createElement("option", { value: "all" }, "All Markets"), allMarkets.filter(m => m !== "Unknown" && m !== "Unmapped").map(m => /*#__PURE__*/React.createElement("option", {
     key: m,
-    active: marketFilter === m,
-    onClick: () => setMarketFilter(m)
-  }, m)), /*#__PURE__*/React.createElement(Pill, {
-    active: marketFilter === "Unknown",
-    onClick: () => setMarketFilter("Unknown")
-  }, "Unknown"))), outlier && /*#__PURE__*/React.createElement("div", {
+    value: m
+  }, m)), /*#__PURE__*/React.createElement("option", { value: "Unknown" }, "Unknown")))), outlier && /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1200,
       margin: "0 auto 16px",
