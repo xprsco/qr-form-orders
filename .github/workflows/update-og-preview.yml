@@ -1,0 +1,75 @@
+name: Update OG Preview Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Screenshot OG preview
+        run: |
+          node -e "
+          const puppeteer = require('puppeteer');
+          (async () => {
+            const browser = await puppeteer.launch({
+              headless: 'new',
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            const page = await browser.newPage();
+            await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
+
+            // Serve files locally
+            const http = require('http');
+            const fs = require('fs');
+            const path = require('path');
+            const mimeTypes = {
+              '.html': 'text/html', '.js': 'application/javascript',
+              '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+              '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml'
+            };
+            const server = http.createServer((req, res) => {
+              const filePath = path.join(process.cwd(), decodeURIComponent(req.url === '/' ? '/og-preview.html' : req.url));
+              const ext = path.extname(filePath);
+              fs.readFile(filePath, (err, data) => {
+                if (err) { res.writeHead(404); res.end(); return; }
+                res.writeHead(200, { 'Content-Type': mimeTypes[ext] || 'application/octet-stream' });
+                res.end(data);
+              });
+            });
+            server.listen(8080);
+
+            await page.goto('http://localhost:8080/', { waitUntil: 'networkidle0' });
+            await new Promise(r => setTimeout(r, 1000));
+            await page.screenshot({ path: 'og-preview.png', type: 'png' });
+            server.close();
+            await browser.close();
+            console.log('Screenshot saved to og-preview.png');
+          })();
+          "
+
+      - name: Commit updated preview
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add og-preview.png
+          if git diff --cached --quiet; then
+            echo "No changes to og-preview.png"
+          else
+            git commit -m "Auto-update OG preview image"
+            git push
+          fi
