@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'og-preview.html'
+      - 'assets/**'
+      - '.github/workflows/update-og-preview.yml'
+  workflow_dispatch:
 
 jobs:
   screenshot:
