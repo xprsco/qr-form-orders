@@ -19,29 +19,24 @@ jobs:
           node-version: 20
 
       - name: Install Puppeteer
-        run: npx puppeteer browsers install chrome
+        run: npm install puppeteer
 
       - name: Screenshot OG preview
         run: |
-          node -e "
+          node << 'SCRIPT'
           const puppeteer = require('puppeteer');
-          (async () => {
-            const browser = await puppeteer.launch({
-              headless: 'new',
-              args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
-            const page = await browser.newPage();
-            await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
+          const http = require('http');
+          const fs = require('fs');
+          const path = require('path');
 
-            // Serve files locally
-            const http = require('http');
-            const fs = require('fs');
-            const path = require('path');
-            const mimeTypes = {
-              '.html': 'text/html', '.js': 'application/javascript',
-              '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-              '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml'
-            };
+          const mimeTypes = {
+            '.html': 'text/html', '.js': 'application/javascript',
+            '.css': 'text/css', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+            '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml'
+          };
+
+          (async () => {
+            // Start local file server
             const server = http.createServer((req, res) => {
               const filePath = path.join(process.cwd(), decodeURIComponent(req.url === '/' ? '/og-preview.html' : req.url));
               const ext = path.extname(filePath);
@@ -53,14 +48,21 @@ jobs:
             });
             server.listen(8080);
 
+            const browser = await puppeteer.launch({
+              headless: 'new',
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            const page = await browser.newPage();
+            await page.setViewport({ width: 1200, height: 630, deviceScaleFactor: 2 });
             await page.goto('http://localhost:8080/', { waitUntil: 'networkidle0' });
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 2000));
             await page.screenshot({ path: 'og-preview.png', type: 'png' });
+
             server.close();
             await browser.close();
             console.log('Screenshot saved to og-preview.png');
           })();
-          "
+          SCRIPT
 
       - name: Commit updated preview
         run: |
