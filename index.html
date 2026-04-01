@@ -3175,6 +3175,7 @@ function OrderDashboard() {
   const [sortDir, setSortDir] = useState("desc");
   const [expandedRow, setExpandedRow] = useState(null);
   const [excludeOutlier, setExcludeOutlier] = useState(true);
+  const [reviewMode, setReviewMode] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [marketFilter, setMarketFilter] = useState("all");
 
@@ -3187,10 +3188,13 @@ function OrderDashboard() {
     });
     return Array.from(markets).sort();
   }, []);
+  const flaggedStores = useMemo(() => new Set(["18390"]), []);
   const filtered = useMemo(() => {
     let data = [...RAW_ORDERS];
-    if (excludeOutlier) {
-      data = data.filter(o => o.store !== "18390");
+    if (reviewMode) {
+      data = data.filter(o => flaggedStores.has(o.store));
+    } else if (excludeOutlier) {
+      data = data.filter(o => !flaggedStores.has(o.store));
     }
     if (dateFilter === "today") data = data.filter(o => o.date.startsWith("2026-03-31"));
     if (dateFilter === "yesterday") data = data.filter(o => o.date.startsWith("2026-03-30"));
@@ -3217,7 +3221,7 @@ function OrderDashboard() {
       return sortDir === "asc" ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
     });
     return data;
-  }, [dateFilter, productFilter, marketFilter, search, sortCol, sortDir, excludeOutlier]);
+  }, [dateFilter, productFilter, marketFilter, search, sortCol, sortDir, excludeOutlier, reviewMode, flaggedStores]);
   const totalRev = filtered.reduce((s, o) => s + o.amount, 0);
   const totalCases = filtered.reduce((s, o) => s + o.qty, 0);
   const totalUnits = filtered.reduce((s, o) => {
@@ -3305,8 +3309,6 @@ function OrderDashboard() {
   });
   const dupes = Object.entries(storeCounts).filter(([, c]) => c > 1);
 
-  // Outlier check (18390)
-  const outlier = RAW_ORDERS.find(o => o.store === "18390");
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: "100vh",
@@ -3419,7 +3421,21 @@ function OrderDashboard() {
   }, "Yesterday (", yesterdayOrders.length, ")"), /*#__PURE__*/React.createElement(Pill, {
     active: dateFilter === "week",
     onClick: () => setDateFilter("week")
-  }, "This Week (3/25-3/31)")), /*#__PURE__*/React.createElement("div", {
+  }, "This Week (3/25-3/31)"), flaggedStores.size > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setReviewMode(!reviewMode); if (!reviewMode) setExcludeOutlier(false); else setExcludeOutlier(true); },
+    style: {
+      padding: "4px 10px",
+      borderRadius: 20,
+      border: "none",
+      cursor: "pointer",
+      fontSize: 11,
+      fontWeight: 500,
+      background: reviewMode ? "rgba(255,180,50,0.2)" : "rgba(255,255,255,0.04)",
+      color: reviewMode ? "#ffbb44" : "#556677",
+      transition: "all 0.2s",
+      marginLeft: 4
+    }
+  }, "Review (", flaggedStores.size, ")")), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -3503,35 +3519,7 @@ function OrderDashboard() {
   }, /*#__PURE__*/React.createElement("option", { value: "all" }, "All Markets"), allMarkets.filter(m => m !== "Unknown" && m !== "Unmapped").map(m => /*#__PURE__*/React.createElement("option", {
     key: m,
     value: m
-  }, m)), /*#__PURE__*/React.createElement("option", { value: "Unknown" }, "Unknown")))), outlier && /*#__PURE__*/React.createElement("div", {
-    style: {
-      maxWidth: 1200,
-      margin: "0 auto 16px",
-      padding: "12px 20px",
-      borderRadius: 12,
-      background: "rgba(255,59,48,0.12)",
-      border: "1px solid rgba(255,59,48,0.3)",
-      fontSize: 13,
-      color: "#ff6b6b",
-      fontWeight: 500,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      justifyContent: "space-between"
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDEA8 Data Entry Alert: Store 18390 (Vipul Patel, 150 cases / $37,800) is likely an error"), /*#__PURE__*/React.createElement("button", {
-    onClick: () => setExcludeOutlier(!excludeOutlier),
-    style: {
-      padding: "4px 12px",
-      background: "#ff4444",
-      color: "#fff",
-      border: "none",
-      borderRadius: 6,
-      cursor: "pointer",
-      fontSize: 12,
-      fontWeight: 600
-    }
-  }, excludeOutlier ? "Include" : "Exclude", " from totals")), /*#__PURE__*/React.createElement("div", {
+  }, m)), /*#__PURE__*/React.createElement("option", { value: "Unknown" }, "Unknown")))), /*#__PURE__*/React.createElement("div", {
     style: {
       maxWidth: 1200,
       margin: "0 auto 24px",
